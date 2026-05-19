@@ -5,19 +5,19 @@ on:
 jobs:
   # Build python wheels
   build:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }}${{ matrix.arch && format(' ({0})', matrix.arch) || '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          [
-            macos-latest,
-            ubuntu-latest,
-            ubuntu-24.04-arm,
-            windows-latest,
-            windows-11-arm,
-          ]
+        include:
+          - os: macos-latest
+          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
+          - os: windows-latest
+          - os: windows-11-arm
+          - os: ubuntu-latest
+            arch: riscv64
     env:
       SCCACHE_VERSION: 0.2.13
       GITHUB_WORKSPACE: "${{github.workspace}}"
@@ -30,6 +30,11 @@ jobs:
         with:
           python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
+      - name: Set up QEMU
+        if: matrix.arch == 'riscv64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: riscv64
       - name: Disable scmtools local scheme
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: >-
@@ -39,7 +44,9 @@ jobs:
         run: echo CIBW_ENABLE=cpython-prerelease >> $GITHUB_ENV
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.1
+        env:
+          CIBW_ARCHS_LINUX: ${{ matrix.arch || 'auto' }}
       - uses: actions/upload-artifact@v4
         with:
           path: wheelhouse/*.whl
-          name: wheels-${{matrix.os}}
+          name: wheels-${{matrix.os}}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}

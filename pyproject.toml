@@ -111,6 +111,7 @@ skip = [
     "*-musllinux_ppc64le",
     "*-musllinux_s390x",
     "*-musllinux_armv7l",
+    "*-musllinux_riscv64",
 ]
 enable = ["cpython-freethreading"]
 test-command = [
